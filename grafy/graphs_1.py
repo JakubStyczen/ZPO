@@ -38,11 +38,11 @@ def dfs_iterative(G: Dict[int, List[int]], s: int) -> List[int]:
         if v not in visited:
             visited.append(v)
             if v in G.keys():
-                for v_neighbour in G[v]:
+                neiV = G[v]
+                neiV.reverse()
+                for v_neighbour in neiV:
                     stack.append(v_neighbour)
     return visited
-
-
 
 def dfs_recursive_function_acyclic(G:Dict[int, List[int]], s: int, visited: List[int]):
     if s in visited:
