@@ -6,35 +6,38 @@ from typing import Optional, List, Dict
 import re
 from abc import ABC, abstractmethod
  
-pattern = r'[a-zA-Z]*/d{1,3}'
-re.compile(pattern)
+
  
 class Product:
-    def __init__(self, product_name: str, product_price: float):
-        self.product_name = product_name
-        self.product_price = product_price
+    def __init__(self, name: str, price: float):
+        self.name = name
+        self.price = price
     # FIXME: klasa powinna posiadać metodę inicjalizacyjną przyjmującą argumenty wyrażające nazwę produktu (typu str) i jego cenę (typu float) -- w takiej kolejności -- i ustawiającą atrybuty `name` (typu str) oraz `price` (typu float)
-    #dodać property do product name w celu wersyfikacji porpawnosci nadania nazwy
     
     def __eq__(self, other) -> bool:
-        return True if (self.product_price == other.product_price) and (self.product_name == other.product_name) else False
+        return True if (self.price == other.price) and (self.name == other.name) else False
  
     def __hash__(self):
         return hash((self.name, self.price))
 
     @property
-    def product_name(self):
-        return self._product_name
+    def name(self):
+        return self._name
 
-    @product_name.setter
-    def product_name(self, value: str):
+    @name.setter
+    def name(self, value: str):
+        pattern = r'[a-zA-Z]+\d{1,3}'
+        pattern = re.compile(pattern)
         if pattern.fullmatch(value):
-            self._product_name = value
+            self._name = value
         else:
             raise ValueError
  
  
-class TooManyProductsFoundError(Exception):
+class ServerError(Exception):
+    pass
+ 
+class TooManyProductsFoundError(ServerError):
     # Reprezentuje wyjątek związany ze znalezieniem zbyt dużej liczby produktów.
     pass
  
@@ -49,31 +52,61 @@ class Server(ABC):
 
     @abstractmethod
     def __init__(self, products: List[Product]) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_entries(self, n_letters: int) -> List[Product]:
-        pass
+        raise NotImplementedError
+    
+    def sort_products(self, products: List[Product]) -> List[Product]:
+        func = lambda prod: prod.price
+        return sorted(products, key=func)
 
-class ListServer:
+    def match_product(self, n_letters: int, product: Product, matched_products: List[Product]) -> None:
+        pattern = pattern = f'[a-zA-Z]{{{n_letters}}}\d{{1,3}}'
+        if re.fullmatch(pattern, product.name):
+            if len(matched_products) + 1 <= self.n_max_returned_entries:
+                matched_products.append(product)
+            else:
+                raise TooManyProductsFoundError 
+
+
+class ListServer(Server):
     def __init__(self, products: List[Product]) -> None:
         self.products = products
         
-    def get_entries(self, n_letters: int) -> List[Product]:
-        pass
+    def get_entries(self, n_letters: int = 1) -> List[Product]:
+        filtered_products = []
+        for product in self.products:
+            self.match_product(n_letters, product, filtered_products)
+        return self.sort_products(filtered_products)         
  
-class MapServer:
+ 
+ 
+class MapServer(Server):
     def __init__(self, products: List[Product]) -> None:
         self.products = {product.name : product for product in products}
 
-    def get_entries(self, n_letters: int) -> List[Product]:
-        pass
+    #Jak to z nazwami w słowniku??
+    def get_entries(self, n_letters: int = 1) -> List[Product]:
+        filtered_products = []
+        for product in self.products.values():
+            self.match_product(n_letters, product, filtered_products)
+        return self.sort_products(filtered_products)  
     
  
 class Client:
-    def __init__(self, server: Server):
+    def __init__(self, server: Server) -> None:
         self.server = server
-    # FIXME: klasa powinna posiadać metodę inicjalizacyjną przyjmującą obiekt reprezentujący serwer
  
-    def get_total_price(self, n_letters: Optional[int]) -> Optional[float]:
-        raise NotImplementedError()
+    def get_total_price(self, n_letters: Optional[int] = 1) -> Optional[float]:
+        try:
+            if n_letters is None:
+                entries_products = self.server.get_entries()
+            else:
+                entries_products = self.server.get_entries(n_letters)
+            
+            return sum([product.price for product in entries_products]) if entries_products else None
+        except TooManyProductsFoundError:
+            return None
+    

@@ -3,6 +3,7 @@
 from typing import List, NamedTuple, Set, Dict
 from collections import namedtuple
 import networkx as nx
+import os
 
 
 VertexID = int
@@ -13,22 +14,23 @@ Distance = int
 
 EdgeID = int
 
-def neighbors(adjlist: AdjList, start_vertex: VertexID, max_distance: Distance) -> Set[VertexID]:
+def neighbors(adjlist: AdjList, start_vertex_id: VertexID, max_distance: Distance) -> Set[VertexID]:
     Ver_dist = namedtuple('Ver_dist', "idx, dist")
-    visited = []
+    visited = set()
     queue = []
-    queue.append(Ver_dist(start_vertex, 0))
+    queue.append(Ver_dist(start_vertex_id, 0))
     while queue:
         u = queue.pop(0)
         if u.dist > max_distance:
             break
-        visited.append(u.idx)
+        visited.add(u.idx)
         if u.idx not in adjlist.keys():
             continue
         for v in adjlist[u.idx]:
             if v not in visited:
                 queue.append(Ver_dist(v, u.dist + 1))
-    return set(visited[1:])
+    visited.remove(start_vertex_id)
+    return visited
  
 # Nazwana krotka reprezentująca segment ścieżki.
 class TrailSegmentEntry(NamedTuple):
@@ -47,12 +49,13 @@ def load_multigraph_from_file(filepath: str) -> nx.MultiDiGraph:
     :param filepath: względna ścieżka do pliku (wraz z rozszerzeniem)
     :return: multigraf
     """
+    fullpath = os.getcwd() + '\\' + filepath
     if filepath:
         G = nx.MultiDiGraph()
         
         list_of_nodes = []
         
-        with open(filepath, 'r') as file:
+        with open(fullpath, 'r') as file:
             for line in file.readlines():
                 if line.strip():
                     va, vb, w = line.strip().split(' ')
