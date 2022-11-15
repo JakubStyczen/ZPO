@@ -3,7 +3,6 @@
 from typing import List, NamedTuple, Set, Dict
 from collections import namedtuple
 import networkx as nx
-import os
 
 
 VertexID = int
@@ -49,13 +48,12 @@ def load_multigraph_from_file(filepath: str) -> nx.MultiDiGraph:
     :param filepath: względna ścieżka do pliku (wraz z rozszerzeniem)
     :return: multigraf
     """
-    fullpath = os.getcwd() + '\\' + filepath
     if filepath:
         G = nx.MultiDiGraph()
         
         list_of_nodes = []
         
-        with open(fullpath, 'r') as file:
+        with open(filepath, 'r') as file:
             for line in file.readlines():
                 if line.strip():
                     va, vb, w = line.strip().split(' ')

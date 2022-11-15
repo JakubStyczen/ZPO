@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
  
 class Product:
-    def __init__(self, name: str, price: float):
+    def __init__(self, name: str, price: float) -> None:
         self.name = name
         self.price = price
     # FIXME: klasa powinna posiadać metodę inicjalizacyjną przyjmującą argumenty wyrażające nazwę produktu (typu str) i jego cenę (typu float) -- w takiej kolejności -- i ustawiającą atrybuty `name` (typu str) oraz `price` (typu float)
@@ -26,7 +26,7 @@ class Product:
 
     @name.setter
     def name(self, value: str):
-        pattern = r'[a-zA-Z]+\d{1,3}'
+        pattern = r'^[a-zA-Z]+\d+$'
         pattern = re.compile(pattern)
         if pattern.fullmatch(value):
             self._name = value
@@ -57,42 +57,35 @@ class Server(ABC):
     @abstractmethod
     def get_entries(self, n_letters: int) -> List[Product]:
         raise NotImplementedError
-    
-    def sort_products(self, products: List[Product]) -> List[Product]:
-        func = lambda prod: prod.price
-        return sorted(products, key=func)
 
-    def match_product(self, n_letters: int, product: Product, matched_products: List[Product]) -> None:
-        pattern = pattern = f'[a-zA-Z]{{{n_letters}}}\d{{1,3}}'
-        if re.fullmatch(pattern, product.name):
-            if len(matched_products) + 1 <= self.n_max_returned_entries:
-                matched_products.append(product)
-            else:
-                raise TooManyProductsFoundError 
+    def match_and_sort_product(self, n_letters: int, products_list: List[Product]) -> List[Product]:
+        pattern = pattern = f'[a-zA-Z]{{{n_letters}}}\d{{2,3}}'
+        filtered_products = []
+        for product in products_list:
+            if re.fullmatch(pattern, product.name):
+                if len(filtered_products) + 1 <= self.n_max_returned_entries:
+                    filtered_products.append(product)
+                else:
+                    raise TooManyProductsFoundError
+        func = lambda prod: prod.price
+        return sorted(filtered_products, key=func)
 
 
 class ListServer(Server):
     def __init__(self, products: List[Product]) -> None:
-        self.products = products
+        self.products = products[:]
         
     def get_entries(self, n_letters: int = 1) -> List[Product]:
-        filtered_products = []
-        for product in self.products:
-            self.match_product(n_letters, product, filtered_products)
-        return self.sort_products(filtered_products)         
- 
+        return self.match_and_sort_product(n_letters, self.products)       
  
  
 class MapServer(Server):
     def __init__(self, products: List[Product]) -> None:
-        self.products = {product.name : product for product in products}
+        self.products = {product.name : product for product in products[:]}
 
     #Jak to z nazwami w słowniku??
     def get_entries(self, n_letters: int = 1) -> List[Product]:
-        filtered_products = []
-        for product in self.products.values():
-            self.match_product(n_letters, product, filtered_products)
-        return self.sort_products(filtered_products)  
+        return self.match_and_sort_product(n_letters, self.products.values()) 
     
  
 class Client:

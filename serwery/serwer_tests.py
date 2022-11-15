@@ -1,8 +1,9 @@
 import unittest
 from collections import Counter
- 
-from servers import Server, ListServer, Product, Client, MapServer, TooManyProductsFoundError
- 
+
+from servers import (Client, ListServer, MapServer, Product, Server,
+                     TooManyProductsFoundError)
+
 server_types = (ListServer, MapServer)
  
  
@@ -17,11 +18,7 @@ class ProductTest(unittest.TestCase):
         self.assertRaises(ValueError, Product, '123', 5.0)
         
     def test_init_prodcut_without_number(self):
-        self.assertRaises(ValueError, Product, 'a', 5.0)
-    
-    def test_init_prodcut_too_many_numbers(self):
-        self.assertRaises(ValueError, Product, 'aaa1234', 5.0)
-    
+        self.assertRaises(ValueError, Product, 'a', 5.0) 
  
 class ServerTest(unittest.TestCase):
  
@@ -54,11 +51,11 @@ class ClientTest(unittest.TestCase):
             self.assertEqual(None, client.get_total_price())
     
     def test_total_price_for_raise_exception(self):
-        products = [Product('PP234', 2) for i in range(Server.n_max_returned_entries + 1)]
+        products = [Product(f'PP{i}34', 2) for i in range(Server.n_max_returned_entries + 1)]
         for server_type in server_types:
             server = server_type(products)
             client = Client(server)
-            self.assertEqual(None, client.get_total_price())
+            self.assertEqual(None, client.get_total_price(2))
             
     
  
